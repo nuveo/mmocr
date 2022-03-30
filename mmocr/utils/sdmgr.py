@@ -1,4 +1,3 @@
-from __future__ import annotations
 import os
 
 import torch
@@ -52,40 +51,31 @@ class KeyInformationExtraction:
         return labels
 
     def predict(self, image, bb_annotations):
-        '''
-            bb_annotations: list of dict with bbox 04 point (y, ymax, x, xmax) and the text key and info.
-                bb_annotations: [
-                    {
-                        bbox: [y, ymax, x, xmax],
-                        text: ""
-                    }
-                ]
-
-            bb_list : 
-            list with 08 coordinates. The nineth element is score of bb.
-            Textract: 
-                - y, ymax, x, xmax
-                - text
-        '''
         annotations = []
+        result = []
+
         for bb in bb_annotations:
             box_res = {}
-            box_res['box'] = [round(x) for x in bb['bbox']]
             box = []
-            if len(bb['bbox']) == 4:
-                min_x = bb['bbox'][2]
-                min_y = bb['bbox'][0]
-                max_x = bb['bbox'][3]
-                max_y = bb['bbox'][1]
+
+            if len(bb['rect']) == 4:
+                min_x = round(bb['rect'][2])
+                min_y = round(bb['rect'][0])
+                max_x = round(bb['rect'][3])
+                max_y = round(bb['rect'][1])
 
                 box = [
                     min_x, min_y, max_x, min_y, max_x, max_y, min_x, max_y
                 ]
             box_res['box'] = box
             box_res['text'] = bb['text']
-            box_res['box_score'] = 1.0
-            box_res['text_score'] = 1.0
+            box_res['text_score'] = bb['conf']
             annotations.append(box_res)
+            result.append({
+                'box': [min_x, min_y, max_x, max_y],
+                'text': bb['text'],
+                'text_score': bb['conf']
+            })
 
 
         ann_info = self.dataset._parse_anno_info(annotations)
@@ -104,5 +94,8 @@ class KeyInformationExtraction:
         labels = self.generate_labels(kie_result, gt_bboxes,
                                                   self.model.class_list)
 
-        breakpoint()
-        return None
+        for i in range(len(labels)):
+            result[i]['label'] = labels[i][0]
+            result[i]['label_score'] = labels[i][1]
+
+        return result
