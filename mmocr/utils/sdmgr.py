@@ -97,9 +97,10 @@ class KeyInformationExtraction:
                 parcial_res[i]['label'] = labels[i][0]
                 parcial_res[i]['label_score'] = labels[i][1]
 
+            confid_thre = self.model.cfg.get('confidence_thr', 0.5)
             parcial_res = [
                 e for e in parcial_res
-                if e['label_score'] >= self.model.cfg['confidence_thr']]
+                if e['label_score'] >= confid_thre]
 
             result.append(parcial_res)
         return result
